@@ -11,6 +11,7 @@ Veil is a browser-only steganography studio.
 - **Hide** a message in the least-significant bits of any image. Optional passphrase encrypts it with PBKDF2 + AES-GCM.
 - **Seek** a Veil PNG and read the message back. Everything is decoded locally.
 - **Generate a cover** with a Pollinations image model, then hide the message in it.
+- **Write a decoy caption** with a Pollinations text model, so the post around the picture has a plausible story.
 - **Fable mode** recreates the LessWrong experiment: one Pollinations model draws an SVG that hides a secret, then a fresh model gets the same source and tries to find it.
 
 ## Why it is different

@@ -714,6 +714,45 @@
         }
     });
 
+    $("decoyBtn").addEventListener("click", async () => {
+        if (!authKey) {
+            openAuth();
+            return;
+        }
+        const prompt = $("coverPrompt").value.trim() || "an ordinary photo";
+        $("decoyBtn").disabled = true;
+        setStatus($("decoyStatus"), "Writing…");
+        try {
+            const caption = await chat(
+                [
+                    {
+                        role: "system",
+                        content:
+                            "Write one short, innocuous caption for a photo, like a social post. No quotation marks, no hashtags, at most 20 words. Never hint that anything is hidden.",
+                    },
+                    { role: "user", content: `The photo: ${prompt}` },
+                ],
+                { maxTokens: 200, temperature: 1 },
+            );
+            $("decoy").value = caption.replace(/^["']|["']$/g, "").trim();
+            setStatus($("decoyStatus"), "Caption ready. It is not embedded in the PNG.", "ok");
+        } catch (error) {
+            setStatus($("decoyStatus"), error.message || "Could not write a caption.", "error");
+        } finally {
+            $("decoyBtn").disabled = false;
+        }
+    });
+
+    $("copyDecoy").addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText($("decoy").value || "");
+            $("copyDecoy").textContent = "Copied";
+            setTimeout(() => ($("copyDecoy").textContent = "Copy"), 1200);
+        } catch {
+            /* clipboard may be blocked */
+        }
+    });
+
     $("connectBtn").addEventListener("click", () => {
         if (authKey) {
             if (confirm("Disconnect this tab from Pollinations?")) clearKey();
