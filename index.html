@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Veil — hide a message in plain sight</title>
+        <meta
+            name="description"
+            content="Hide an encrypted message inside an ordinary picture, or watch two AI models play hide-and-seek with an SVG secret."
+        />
+        <link rel="stylesheet" href="./styles.css" />
+        <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0d12'/%3E%3Cpath d='M16 6c5 0 9 4 9 10s-4 10-9 10-9-4-9-10 4-10 9-10z' fill='none' stroke='%235eead4' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%235eead4'/%3E%3C/svg%3E" />
+    </head>
+    <body>
+        <div class="grain" aria-hidden="true"></div>
+
+        <header class="topbar">
+            <a class="brand" href="./">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" width="28" height="28">
+                        <path d="M16 4c5.5 0 10 4.5 10 12s-4.5 12-10 12S6 23.5 6 16 10.5 4 16 4z" fill="none" stroke="currentColor" stroke-width="2" />
+                        <circle cx="16" cy="16" r="3.5" fill="currentColor" />
+                    </svg>
+                </span>
+                <span class="brand-text">
+                    <strong>Veil</strong>
+                    <small>hide a message in plain sight</small>
+                </span>
+            </a>
+
+            <div class="topbar-actions">
+                <a class="ghost-btn" href="https://github.com/kreggscode/veil-stego" target="_blank" rel="noreferrer">Source</a>
+                <button class="connect-btn" id="connectBtn" type="button">
+                    <span class="dot" id="connectDot"></span>
+                    <span id="connectLabel">Connect Pollinations</span>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero">
+                <p class="eyebrow">Steganography studio</p>
+                <h1>An ordinary picture.<br /><span>An extraordinary secret.</span></h1>
+                <p class="lede">
+                    Hide an encrypted message in the pixels of any image, or let a Pollinations model draw a cover and
+                    another model try to find what is hidden. Nothing leaves your browser except the AI calls you ask for.
+                </p>
+                <div class="hero-meta">
+                    <span><b>LSB</b> payload</span>
+                    <span><b>AES-GCM</b> optional</span>
+                    <span><b>PNG</b> out</span>
+                    <span><b>BYOP</b> Pollen</span>
+                </div>
+            </section>
+
+            <nav class="tabs" aria-label="Modes">
+                <button class="tab is-active" data-tab="hide" type="button">Hide</button>
+                <button class="tab" data-tab="seek" type="button">Seek</button>
+                <button class="tab" data-tab="fable" type="button">Fable mode</button>
+            </nav>
+
+            <!-- HIDE -->
+            <section class="panel is-active" id="tab-hide">
+                <div class="grid two">
+                    <article class="card">
+                        <header class="card-head">
+                            <h2>1 · Pick a cover</h2>
+                            <p>Drop any image, or ask Pollinations for one.</p>
+                        </header>
+
+                        <label class="drop" id="hideDrop">
+                            <input type="file" id="hideFile" accept="image/*" hidden />
+                            <img id="hidePreview" alt="Cover preview" hidden />
+                            <div class="drop-empty" id="hideEmpty">
+                                <span class="drop-icon" aria-hidden="true">⇣</span>
+                                <strong>Drop an image</strong>
+                                <small>or click to browse · PNG, JPEG, WebP</small>
+                            </div>
+                        </label>
+
+                        <div class="cover-row">
+                            <input
+                                id="coverPrompt"
+                                type="text"
+                                placeholder="a quiet harbour at dusk, film grain"
+                                autocomplete="off"
+                            />
+                            <button class="btn" id="coverBtn" type="button">Generate</button>
+                        </div>
+                        <p class="hint" id="coverStatus">A generated cover is drawn in your browser, then used like any other image.</p>
+                    </article>
+
+                    <article class="card">
+                        <header class="card-head">
+                            <h2>2 · Write the secret</h2>
+                            <p>Only the pixels change. The image looks the same.</p>
+                        </header>
+
+                        <label class="field">
+                            <span>Message</span>
+                            <textarea id="secret" rows="5" placeholder="Meet me at the old lighthouse. Bring the blue folder."></textarea>
+                        </label>
+
+                        <label class="field">
+                            <span>Passphrase <em>optional, but recommended</em></span>
+                            <input id="passphrase" type="password" placeholder="encrypts the message with AES-GCM" autocomplete="new-password" />
+                        </label>
+
+                        <div class="capacity" aria-live="polite">
+                            <div class="capacity-bar"><span id="capacityFill"></span></div>
+                            <div class="capacity-text">
+                                <span id="capacityText">Load a cover to see capacity</span>
+                                <span id="capacityPct"></span>
+                            </div>
+                        </div>
+
+                        <button class="btn primary wide" id="hideBtn" type="button" disabled>Hide message in image</button>
+                        <p class="status" id="hideStatus"></p>
+                        <a class="download" id="downloadLink" hidden download="veil.png">Download the veiled PNG</a>
+                    </article>
+                </div>
+
+                <div class="strip">
+                    <span class="strip-label">How it works</span>
+                    <p>
+                        A 64-byte header goes into the first pixels, then the payload is scattered across the R, G and B
+                        least-significant bits with a seeded permutation. With a passphrase the payload is PBKDF2 +
+                        AES-GCM ciphertext, so a decoder without the phrase sees noise.
+                    </p>
+                </div>
+            </section>
+
+            <!-- SEEK -->
+            <section class="panel" id="tab-seek">
+                <div class="grid two">
+                    <article class="card">
+                        <header class="card-head">
+                            <h2>Open a veiled image</h2>
+                            <p>A Veil PNG carries its own header, salt and IV.</p>
+                        </header>
+                        <label class="drop" id="seekDrop">
+                            <input type="file" id="seekFile" accept="image/*" hidden />
+                            <img id="seekPreview" alt="Veiled image preview" hidden />
+                            <div class="drop-empty" id="seekEmpty">
+                                <span class="drop-icon" aria-hidden="true">◎</span>
+                                <strong>Drop the PNG</strong>
+                                <small>or click to browse</small>
+                            </div>
+                        </label>
+                    </article>
+
+                    <article class="card">
+                        <header class="card-head">
+                            <h2>Reveal</h2>
+                            <p>Everything is decoded locally in this tab.</p>
+                        </header>
+                        <label class="field">
+                            <span>Passphrase <em>if the sender used one</em></span>
+                            <input id="seekPass" type="password" placeholder="leave empty for an unencrypted message" autocomplete="off" />
+                        </label>
+                        <button class="btn primary wide" id="seekBtn" type="button" disabled>Reveal message</button>
+                        <p class="status" id="seekStatus"></p>
+                        <div class="reveal" id="revealBox" hidden>
+                            <span class="strip-label">Message</span>
+                            <pre id="revealed"></pre>
+                            <div class="reveal-actions">
+                                <button class="ghost-btn" id="copyReveal" type="button">Copy</button>
+                                <button class="ghost-btn" id="rehideBtn" type="button">Use this as a cover</button>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- FABLE -->
+            <section class="panel" id="tab-fable">
+                <article class="card fable-card">
+                    <header class="card-head">
+                        <h2>Fable mode</h2>
+                        <p>
+                            The experiment from the LessWrong post: one model hides a secret in an SVG it draws, then a
+                            fresh model gets the same SVG and tries to find it.
+                        </p>
+                    </header>
+
+                    <div class="fable-input">
+                        <label class="field">
+                            <span>Secret to hide</span>
+                            <input id="fableSecret" type="text" value="the lighthouse keeper is not who he says" maxlength="120" />
+                        </label>
+                        <button class="btn primary" id="fableHideBtn" type="button">Let a model hide it</button>
+                    </div>
+
+                    <div class="fable-grid">
+                        <div class="fable-pane">
+                            <span class="strip-label">The picture</span>
+                            <div class="fable-frame">
+                                <img id="fableFrame" alt="Model-drawn SVG cover" hidden />
+                                <span class="fable-empty" id="fableFrameEmpty">The model's drawing appears here.</span>
+                            </div>
+                            <details class="code-details" id="fableCodeWrap" hidden>
+                                <summary>SVG source</summary>
+                                <pre id="fableCode"></pre>
+                            </details>
+                        </div>
+                        <div class="fable-pane">
+                            <span class="strip-label">The seeker</span>
+                            <button class="btn" id="fableSeekBtn" type="button" disabled>Ask a fresh model to find it</button>
+                            <p class="status" id="fableStatus"></p>
+                            <div class="reveal" id="fableGuessBox" hidden>
+                                <span class="strip-label">Fresh model's guess</span>
+                                <pre id="fableGuess"></pre>
+                            </div>
+                            <div class="reveal" id="fableTruthBox" hidden>
+                                <span class="strip-label">What actually happened</span>
+                                <p class="truth" id="fableTruth"></p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <footer class="footer">
+                <p>
+                    Local LSB + WebCrypto. AI features call
+                    <a href="https://gen.pollinations.ai/docs" target="_blank" rel="noreferrer">gen.pollinations.ai</a>
+                    with your own Pollen through the device flow.
+                </p>
+                <a href="https://pollinations.ai/?ref=badge" target="_blank" rel="noreferrer">
+                    <img
+                        src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg"
+                        alt="Made with pollinations.ai"
+                        height="20"
+                    />
+                </a>
+            </footer>
+        </main>
+
+        <!-- Auth modal -->
+        <div class="modal" id="authModal" hidden>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+                <header class="modal-head">
+                    <h2 id="authTitle">Connect Pollinations</h2>
+                    <button class="icon-btn" id="authClose" type="button" aria-label="Close">×</button>
+                </header>
+                <p class="hint">
+                    Veil never sees your password. A short-lived, revocable key is issued to this browser tab only.
+                </p>
+
+                <div class="device-box" id="deviceBox" hidden>
+                    <span class="strip-label">Enter this code</span>
+                    <pre class="device-code" id="deviceCode">····</pre>
+                    <a class="btn primary wide" id="deviceLink" target="_blank" rel="noreferrer">Open the approval page</a>
+                    <p class="status" id="deviceStatus">Waiting for approval…</p>
+                </div>
+
+                <div class="divider"><span>or paste a key</span></div>
+                <label class="field">
+                    <span>API key</span>
+                    <input id="pasteKey" type="password" placeholder="sk_…" autocomplete="off" />
+                </label>
+                <button class="btn wide" id="useKeyBtn" type="button">Use this key</button>
+                <p class="status" id="pasteStatus"></p>
+            </div>
+        </div>
+
+        <script src="./app.js"></script>
+    </body>
+</html>
