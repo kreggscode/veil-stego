@@ -35,6 +35,8 @@ The LessWrong post about a model hiding a message in an SVG it drew, and a fresh
 3. A fresh model (`openai`) receives only the SVG source and tries to recover the message.
 4. Veil compares the guess with the secret and reveals the hider's scheme.
 
+![Fable mode: a model drew a lighthouse, then another model found the secret in the SVG source](fable.png)
+
 It is a game, not a security claim. The point is watching one model's hiding strategy meet another model's search strategy.
 
 ## Bring your own Pollen
