@@ -471,6 +471,26 @@
         }
     }
 
+    async function loadSample(autoReveal) {
+        const button = $("sampleBtn");
+        button.disabled = true;
+        setStatus($("seekStatus"), "Loading the sample…");
+        try {
+            const response = await fetch("./sample.png", { cache: "no-store" });
+            if (!response.ok) throw new Error("The sample image is unavailable.");
+            const blob = await response.blob();
+            const file = new File([blob], "veil-sample.png", { type: blob.type || "image/png" });
+            $("seekPass").value = "";
+            await loadSeek(file);
+            setStatus($("seekStatus"), autoReveal ? "Sample loaded — reading it…" : "Sample loaded. Click Reveal message.");
+            if (autoReveal) await revealMessage();
+        } catch (error) {
+            setStatus($("seekStatus"), error.message || "Could not load the sample.", "error");
+        } finally {
+            button.disabled = false;
+        }
+    }
+
     async function revealMessage() {
         if (!seekCanvas) return;
         $("seekBtn").disabled = true;
@@ -662,6 +682,13 @@
     $("passphrase").addEventListener("input", updateCapacity);
     $("hideBtn").addEventListener("click", hideMessage);
     $("seekBtn").addEventListener("click", revealMessage);
+    $("sampleBtn").addEventListener("click", () => loadSample(false));
+    $("demoBtn").addEventListener("click", () => {
+        document.querySelector('[data-tab="seek"]').click();
+        const tabs = document.querySelector(".tabs");
+        window.scrollTo({ top: tabs.offsetTop - 92, behavior: "smooth" });
+        loadSample(true);
+    });
 
     $("copyReveal").addEventListener("click", async () => {
         try {
